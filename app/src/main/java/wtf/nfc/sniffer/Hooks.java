@@ -18,7 +18,7 @@ public class Hooks implements IXposedHookLoadPackage {
 
         findAndHookMethod("com.android.nfc.NfcService", lpparam.classLoader, "onHostCardEmulationData", byte[].class, new XC_MethodHook() {
             @Override
-            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                 byte[] data = (byte[]) param.args[0];
 
                 String l = "Data in: " + bytesToHex(data);
@@ -29,7 +29,7 @@ public class Hooks implements IXposedHookLoadPackage {
 
         findAndHookMethod("com.android.nfc.NfcService", lpparam.classLoader, "sendData", byte[].class, new XC_MethodHook() {
             @Override
-            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                 byte[] data = (byte[]) param.args[0];
 
                 String l = "Data out: " + bytesToHex(data);
