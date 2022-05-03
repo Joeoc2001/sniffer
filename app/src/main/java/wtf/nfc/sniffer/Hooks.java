@@ -1,12 +1,8 @@
 package wtf.nfc.sniffer;
 
-import android.util.Log;
-
-import java.lang.reflect.Method;
-
 import static de.robv.android.xposed.XposedHelpers.findAndHookMethod;
-import static de.robv.android.xposed.XposedHelpers.findClass;
-import static de.robv.android.xposed.XposedHelpers.findMethodBestMatch;
+
+import android.util.Log;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
@@ -15,32 +11,43 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 
 public class Hooks implements IXposedHookLoadPackage {
 
+    @Override
     public void handleLoadPackage(final LoadPackageParam lpparam) throws Throwable {
         if (!"com.android.nfc".equals(lpparam.packageName))
             return;
 
-        findAndHookMethod("com.android.nfc.NfcService.TagService", lpparam.classLoader, "transceive", int.class, byte[].class, boolean.class, new XC_MethodHook() {
+        findAndHookMethod("com.android.nfc.NfcService", lpparam.classLoader, "onHostCardEmulationData", byte[].class, new XC_MethodHook() {
+            @Override
+            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                byte[] data = (byte[]) param.args[0];
 
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        byte[] cmd = (byte[]) param.args[1];
-                        byte[] response = (byte[])param.getResult().getClass().getMethod("getResponseOrThrow").invoke(param.getResult());
-                        Log.i("NFCSNIFF", bytesToHex(cmd)  + " / " + bytesToHex(response));
+                String l = "Data in: " + bytesToHex(data);
+                Log.i("NFCSNIFF", l);
+                XposedBridge.log(l);
+            }
+        });
 
+        findAndHookMethod("com.android.nfc.NfcService", lpparam.classLoader, "sendData", byte[].class, new XC_MethodHook() {
+            @Override
+            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                byte[] data = (byte[]) param.args[0];
 
-                    }
-                }
-        );
+                String l = "Data out: " + bytesToHex(data);
+                Log.i("NFCSNIFF", l);
+                XposedBridge.log(l);
+            }
+        });
 
+        Log.i("NFCSNIFF", "Hooked");
     }
-
 
 
     // source: http://stackoverflow.com/questions/9655181/how-to-convert-a-byte-array-to-a-hex-string-in-java
     final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
+
     public static String bytesToHex(byte[] bytes) {
         char[] hexChars = new char[bytes.length * 2];
-        for ( int j = 0; j < bytes.length; j++ ) {
+        for (int j = 0; j < bytes.length; j++) {
             int v = bytes[j] & 0xFF;
             hexChars[j * 2] = hexArray[v >>> 4];
             hexChars[j * 2 + 1] = hexArray[v & 0x0F];
